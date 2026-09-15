@@ -1,0 +1,3 @@
+{
+  "python.defaultInterpreterPath": "${workspaceFolder}/cvrie_project/.venv/bin/python3"
+}
