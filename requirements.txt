@@ -3,5 +3,3 @@ numpy
 matplotlib
 scikit-learn
 jupyterlab
-nltk
-sentence-transformers
