@@ -1,13 +1,3 @@
-#!/usr/bin/env python3
-"""Pipeline de clustering non supervise des temoignages de symptomes.
-
-Usage:
-    python3 src/unsupervised_pipeline.py [dataset.csv] [output.csv]
-
-Reprend la configuration retenue dans notebooks/unsupervised_learning.ipynb :
-TF-IDF (unigrammes + bigrammes) -> LSA (TruncatedSVD, 5 composantes) -> K-Means (k=5).
-"""
-
 import csv
 import re
 import sys
