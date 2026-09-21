@@ -14,3 +14,6 @@ Thumbs.db
 
 # IDE
 .vscode/
+
+# Sorties generees par les scripts
+data/clusters_output.csv
