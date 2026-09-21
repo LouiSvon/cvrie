@@ -10,4 +10,10 @@ __pycache__/
 
 # Fichiers OS
 .DS_Store
-Thumbs.dbvenv/
+Thumbs.db
+
+# IDE
+.vscode/
+
+# Sorties generees par les scripts
+data/clusters_output.csv
