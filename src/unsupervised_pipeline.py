@@ -4,14 +4,14 @@ import sys
 from pathlib import Path
 
 import pandas as pd
-from sklearn.cluster import KMeans
-from sklearn.decomposition import TruncatedSVD
+from sklearn.cluster import AgglomerativeClustering
+from sklearn.decomposition import NMF
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import normalize
 
-N_CLUSTERS = 10
-N_LSA_COMPONENTS = 10
+N_CLUSTERS = 15
+N_NMF_COMPONENTS = 12
 MAX_FEATURES = 2000
 DEFAULT_DATASET = Path(__file__).resolve().parent.parent / "data" / "Student_Dataset.csv"
 
@@ -56,29 +56,34 @@ def run_pipeline(data: pd.DataFrame) -> pd.DataFrame:
     data = data.copy()
     data["cleaned_text"] = data["text"].apply(clean_text)
 
-    vectorizer = TfidfVectorizer(stop_words="english", max_features=MAX_FEATURES, ngram_range=(1, 2))
+    vectorizer = TfidfVectorizer(
+        stop_words="english", max_features=MAX_FEATURES, ngram_range=(1, 2), sublinear_tf=True
+    )
     tfidf_matrix = vectorizer.fit_transform(data["cleaned_text"])
 
-    svd = TruncatedSVD(n_components=N_LSA_COMPONENTS, random_state=42)
-    # Normalisation (distance cosinus) : permet de separer beaucoup plus de clusters sans perdre en precision
-    reduced_matrix = normalize(svd.fit_transform(tfidf_matrix))
+    # NMF (factorisation non negative) : sur ce jeu de donnees, separe mieux que la LSA
+    nmf = NMF(n_components=N_NMF_COMPONENTS, random_state=42, max_iter=500)
+    reduced_matrix_raw = nmf.fit_transform(tfidf_matrix)
+    reduced_matrix = normalize(reduced_matrix_raw)  # distance cosinus plutot qu'euclidienne
 
-    kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=42)
-    data["cluster"] = kmeans.fit_predict(reduced_matrix)
+    # Clustering hierarchique (cosinus) : meilleure validation externe que K-Means a ce niveau de finesse
+    clustering = AgglomerativeClustering(n_clusters=N_CLUSTERS, metric="cosine", linkage="average")
+    data["cluster"] = clustering.fit_predict(reduced_matrix)
 
     score = silhouette_score(reduced_matrix, data["cluster"])
     print(f"Temoignages traites : {len(data)}")
-    print(f"Inertie : {kmeans.inertia_:.2f}")
     print(f"Score de Silhouette : {score:.4f}")
 
-    # Mots-clefs dominants par cluster : reprojection des centres LSA vers l'espace TF-IDF
+    # Mots-clefs dominants par cluster : AgglomerativeClustering n'a pas de centres, on moyenne
+    # les temoignages de chaque cluster (espace NMF) puis on reprojette vers le TF-IDF
     words = vectorizer.get_feature_names_out()
-    centers_tfidf = kmeans.cluster_centers_ @ svd.components_
     for i in range(N_CLUSTERS):
-        top_idx = centers_tfidf[i].argsort()[-5:][::-1]
+        mask = (data["cluster"] == i).to_numpy()
+        centre = reduced_matrix_raw[mask].mean(axis=0)
+        centre_tfidf = centre @ nmf.components_
+        top_idx = centre_tfidf.argsort()[-5:][::-1]
         top_words = ", ".join(words[j] for j in top_idx)
-        size = int((data["cluster"] == i).sum())
-        print(f"Cluster {i} ({size} temoignages) : {top_words}")
+        print(f"Cluster {i} ({int(mask.sum())} temoignages) : {top_words}")
 
     return data
 
