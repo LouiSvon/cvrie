@@ -10,7 +10,7 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import silhouette_score
 from sklearn.preprocessing import normalize
 
-N_CLUSTERS = 15
+N_CLUSTERS = 12
 N_NMF_COMPONENTS = 12
 MAX_FEATURES = 2000
 DEFAULT_DATASET = Path(__file__).resolve().parent.parent / "data" / "Student_Dataset.csv"
