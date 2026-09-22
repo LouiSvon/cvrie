@@ -8,9 +8,11 @@ from sklearn.cluster import KMeans
 from sklearn.decomposition import TruncatedSVD
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics import silhouette_score
+from sklearn.preprocessing import normalize
 
-N_CLUSTERS = 5
-N_LSA_COMPONENTS = 5
+N_CLUSTERS = 10
+N_LSA_COMPONENTS = 10
+MAX_FEATURES = 2000
 DEFAULT_DATASET = Path(__file__).resolve().parent.parent / "data" / "Student_Dataset.csv"
 
 
@@ -54,11 +56,12 @@ def run_pipeline(data: pd.DataFrame) -> pd.DataFrame:
     data = data.copy()
     data["cleaned_text"] = data["text"].apply(clean_text)
 
-    vectorizer = TfidfVectorizer(stop_words="english", max_features=500, ngram_range=(1, 2))
+    vectorizer = TfidfVectorizer(stop_words="english", max_features=MAX_FEATURES, ngram_range=(1, 2))
     tfidf_matrix = vectorizer.fit_transform(data["cleaned_text"])
 
     svd = TruncatedSVD(n_components=N_LSA_COMPONENTS, random_state=42)
-    reduced_matrix = svd.fit_transform(tfidf_matrix)
+    # Normalisation (distance cosinus) : permet de separer beaucoup plus de clusters sans perdre en precision
+    reduced_matrix = normalize(svd.fit_transform(tfidf_matrix))
 
     kmeans = KMeans(n_clusters=N_CLUSTERS, random_state=42)
     data["cluster"] = kmeans.fit_predict(reduced_matrix)
