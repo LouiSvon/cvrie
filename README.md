@@ -105,14 +105,15 @@ Détails complets, code et interprétations : `notebooks/unsupervised_learning.i
 
 **Dataset** : [BloodMNIST](https://doi.org/10.1038/s41597-022-01721-8) (collection MedMNIST v2), 17 092 images 28×28 RGB de cellules sanguines individuelles, 8 classes morphologiques (basophile, éosinophile, érythroblaste, granulocytes immatures, lymphocyte, monocyte, neutrophile, plaquette). Choix justifié en détail dans `docs/dataset_choice.md` : léger (compatible avec l'absence de réseaux de neurones), déséquilibre modéré et pédagogique (rapport ≈ 2,7 entre classes), problème multi-classes distinctif.
 
-**Pipeline retenu** : normalisation des pixels → aplatissement (2 352 features) → PCA (95 % de variance conservée → 176 composantes) → SVM à noyau RBF (`class_weight='balanced'`).
+**Pipeline retenu** : normalisation des pixels → aplatissement (2 352 features) → augmentation des classes faibles (rotations/symétries) → PCA (95 % de variance conservée → 189 composantes) → SVM à noyau RBF (`class_weight='balanced'`).
 
-**Résultats** : F1 macro **0,844** sur le jeu de test (accuracy 0,861), contre 0,848 en validation — écart minime confirmant l'absence de surapprentissage. Comparé à un Random Forest (0,845, plus lent), une régression logistique (0,808) et un KNN (0,740). La fonction de perte retenue (log loss / entropie croisée pour la régression logistique de référence) est justifiée et comparée à la hinge loss du SVM et au critère de Gini du Random Forest.
+**Résultats** : F1 macro **0,850** sur le jeu de test (accuracy 0,867), contre 0,856 en validation — écart minime confirmant l'absence de surapprentissage. La variante augmentée (rotations/symétries sur les classes faibles) devance légèrement la référence sans augmentation (F1 macro 0,844 test, 0,848 validation), un gain réel mais faible et non significatif pris isolément. Comparé à un Random Forest (0,845, plus lent), une régression logistique (0,808) et un KNN (0,740). La fonction de perte retenue (log loss / entropie croisée pour la régression logistique de référence) est justifiée et comparée à la hinge loss du SVM et au critère de Gini du Random Forest.
 
 **Observations notables** :
 
 - L'hypothèse "les niveaux de gris suffisent" (couleur peu discriminante) est testée puis **réfutée** : -14,4 points de F1 macro en niveaux de gris.
 - La confusion dominante n'est pas celle anticipée (granulocytes immatures / neutrophiles) mais entre granulocytes immatures et monocytes — cohérente avec une explication morphologique réelle (continuum de maturation cellulaire).
+- L'augmentation ciblée des classes faibles (basophile, monocyte) profite en réalité à l'ensemble des classes plutôt qu'aux seules classes visées, et n'aide pas les granulocytes immatures (dont la faiblesse vient d'un chevauchement morphologique, pas d'un manque d'exemples).
 - Une section dédiée (« Essais infructueux ») documente les pistes qui n'ont pas fonctionné et pourquoi.
 
 **Limite assumée** : le modèle identifie un type cellulaire, il ne pose aucun diagnostic — le dataset ne contient que des cellules de patients sains, et l'aplatissement en pixels plafonne mécaniquement la performance atteignable sans réseau convolutif.
