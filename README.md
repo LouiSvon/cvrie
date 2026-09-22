@@ -58,7 +58,7 @@ Ouvrir `notebooks/unsupervised_learning.ipynb` ou `notebooks/supervised_learning
 Les deux pipelines retenus dans les notebooks sont aussi exécutables directement. Dans les deux cas : erreurs écrites sur la sortie d'erreur, code de sortie **84** en cas d'échec, **0** sinon.
 
 ```bash
-# Clustering des témoignages (TF-IDF + LSA + K-Means)
+# Clustering des témoignages (TF-IDF + NMF + clustering hiérarchique)
 python3 src/main.py [chemin_dataset.csv] [chemin_sortie.csv]
 # sans argument : lit data/Student_Dataset.csv, écrit data/clusters_output.csv
 
@@ -72,7 +72,7 @@ python3 src/supervised_pipeline.py [--model {svm,random-forest,logreg,knn,dummy}
 
 **Dataset** : `data/Student_Dataset.csv`, 1011 témoignages en anglais, texte libre, non labellisé. Un chargement naïf (`pandas.read_csv`) n'en récupère que 397 : le nombre de colonnes varie d'une ligne à l'autre (parfois `id, texte`, parfois `id, couleur, texte`) — corrigé par un parsing manuel ligne à ligne. La colonne couleur, toujours `0x000000` dans les données fournies, est volontairement neutre (vérifié empiriquement) : les vraies catégories ne sont révélées qu'en soutenance pour vérifier la cohérence des clusters.
 
-**Pipeline retenu** : nettoyage du texte → TF-IDF (unigrammes + bigrammes, vocabulaire élargi à 2000 termes) → réduction de dimension par LSA (`TruncatedSVD`, 10 composantes, **normalisée** — distance cosinus) → K-Means (k=10).
+**Pipeline retenu** : nettoyage du texte → TF-IDF (unigrammes + bigrammes, vocabulaire élargi à 2000 termes, `sublinear_tf`) → réduction de dimension par **NMF** (factorisation non négative, 12 composantes, **normalisée** — distance cosinus) → clustering **hiérarchique** (`AgglomerativeClustering`, distance cosinus, k=15).
 
 **Démarche de comparaison** (toutes les approches restent dans les outils autorisés) :
 
@@ -83,13 +83,16 @@ python3 src/supervised_pipeline.py [--model {svm,random-forest,logreg,knn,dummy}
 | + DBSCAN (cosinus) | inexploitable (bruit dominant) |
 | + stemming maison (sans dépendance externe, k=5) | 0,023 |
 | + LSA 5 composantes (k=5) | 0,41 — mais se dégrade vite si on augmente k sur cette même représentation |
-| **+ vocabulaire élargi + LSA 10 composantes normalisée (k=10)** | **0,38, avec deux fois plus de clusters** |
+| + vocabulaire élargi + LSA 10 composantes normalisée (k=10) | 0,38, avec deux fois plus de clusters |
+| + **NMF** au lieu de LSA (mêmes réglages, k=10) | **0,56** — net progrès, même nombre de clusters |
+| + NMF (k=15) + **K-Means** | 0,45, mais validation externe en baisse (ARI 0,28) |
+| **+ NMF (12 composantes) + clustering hiérarchique (cosinus, k=15)** | **0,45, avec ARI 0,42 — le meilleur compromis trouvé** |
 
-La réduction de dimension par LSA reste le levier le plus efficace, mais demander directement plus de clusters à cette représentation la dégrade (0,41 → 0,20 à k=30). Élargir le vocabulaire et normaliser l'espace LSA (distance cosinus) permet de doubler le nombre de clusters (k=10) en gardant une séparation forte — confirmé meilleur que le clustering hiérarchique, Gaussian Mixture et Birch à k=10 égal. La fonction de perte de K-Means (l'**inertie**, somme des distances au carré aux centroïdes) est expliquée et complétée par le score de silhouette, qui seul permet de choisir un nombre de clusters pertinent.
+Trois leviers se sont révélés décisifs, dans l'ordre où ils ont été découverts : élargir le vocabulaire et normaliser l'espace réduit (distance cosinus), remplacer la LSA par la **NMF** (mieux adaptée au texte : décomposition en thèmes additifs plutôt qu'en axes pouvant être négatifs), puis remplacer **K-Means** par un clustering hiérarchique une fois `k` poussé à 15 — K-Means restait le meilleur à k=10, mais devenait sous-optimal à cette granularité. La fonction de perte de K-Means (l'**inertie**, somme des distances au carré aux centroïdes) est expliquée et complétée par le score de silhouette, qui seul permet de choisir un nombre de clusters pertinent.
 
-**Précision clinique gagnée avec 10 clusters** : les thèmes génériques à 5 clusters se scindent en sous-catégories distinctes — par exemple "peau" devient deux clusters séparés (réactions allergiques vs brûlures/lésions), et "respiratoire" se sépare en rhume léger vs détresse respiratoire.
+**Précision clinique gagnée avec 15 clusters** : les zones anatomiques se séparent désormais entre elles pour les douleurs musculaires (épaule/bras, genou/jambe, pied/cheville, auparavant un seul cluster), et les présentations respiratoires se distinguent aussi (souffle court vs oppression thoracique). Trois clusters restent très petits (2 à 9 témoignages sur 1011) et sont signalés comme moins fiables à interpréter plutôt que masqués.
 
-**Validation externe** : 50 témoignages étiquetés à la main (jamais transmis au modèle) comparés aux 10 clusters trouvés — Adjusted Rand Index 0,53, Normalized Mutual Information 0,68. Le tableau croisé confirme la séparation plus fine : la catégorie manuelle "peau" se répartit exactement entre les deux clusters allergies/brûlures identifiés.
+**Validation externe** : 50 témoignages étiquetés à la main (jamais transmis au modèle) comparés aux 15 clusters trouvés — Adjusted Rand Index 0,42, Normalized Mutual Information 0,65 : le meilleur résultat de validation externe de tout le notebook, silhouette et ARI progressant cette fois ensemble. Le tableau croisé confirme une séparation cliniquement cohérente (ex. la catégorie manuelle "peau" se répartit toujours proprement entre allergies et brûlures).
 
 **Limite assumée** : ces clusters explorent des *familles de symptômes*, ils ne posent aucun diagnostic — un même symptôme peut relever de pathologies très différentes.
 
@@ -115,7 +118,7 @@ Détails complets, code et interprétations : `notebooks/supervised_learning.ipy
 
 ## Bonus
 
-Le dossier `bonus/` explore une piste hors du cadre des outils autorisés par le sujet : des **embeddings de phrases** (`sentence-transformers`, modèle `all-MiniLM-L6-v2`) à la place du TF-IDF pour le clustering des témoignages, avec une lemmatisation `nltk` en complément. Résultat : silhouette 0,087 (contre 0,018 avec lemmatisation seule) — une nette amélioration par rapport au TF-IDF brut, mais qui reste **en dessous** du résultat obtenu dans le notebook principal avec TF-IDF + LSA (0,38, avec deux fois plus de clusters), en restant pourtant dans les outils autorisés. Comparaison et résultats détaillés dans `bonus/unsupervised_learning_bonus.ipynb`.
+Le dossier `bonus/` explore une piste hors du cadre des outils autorisés par le sujet : des **embeddings de phrases** (`sentence-transformers`, modèle `all-MiniLM-L6-v2`) à la place du TF-IDF pour le clustering des témoignages, avec une lemmatisation `nltk` en complément. Résultat : silhouette 0,087 (contre 0,018 avec lemmatisation seule) — une nette amélioration par rapport au TF-IDF brut, mais qui reste **en dessous** du résultat obtenu dans le notebook principal (0,45, avec quinze clusters au lieu de cinq), en restant pourtant dans les outils autorisés. Comparaison et résultats détaillés dans `bonus/unsupervised_learning_bonus.ipynb`.
 
 ## Avertissement responsable
 
