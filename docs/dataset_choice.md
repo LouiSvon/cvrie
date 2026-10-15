@@ -208,7 +208,9 @@ Yang, J., Shi, R., Wei, D., Liu, Z., Zhao, L., Ke, B., Pfister, H., Ni, B.
 classification.* Scientific Data, 2023.
 https://doi.org/10.1038/s41597-022-01721-8
 
-**Licence :** Apache 2.0
+**Licences :** données sous CC BY 4.0 (attribution obligatoire), code de MedMNIST sous Apache 2.0.
+Source : dépôt officiel `github.com/MedMNIST/MedMNIST`, lu le 2026-10-15 ; BloodMNIST n'y figure pas parmi les exceptions.
+Attribution : citer le papier MedMNIST v2 ci-dessus et le papier du jeu source de BloodMNIST [à ajouter : citation, liste sur medmnist.com].
 
 **Emplacement dans le dépôt :** `data/bloodmnist/` (six fichiers `.npy`)
 

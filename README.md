@@ -10,7 +10,7 @@ Projet Epitech (Bachelor 2, IA — B-SPE-311) : entraîner **CVRIE V1**, une IA 
 ## Structure du projet
 
 ```
-cvrie_project/
+cvrie/
 ├── data/
 │   ├── Student_Dataset.csv        # témoignages patients (partie non supervisée)
 │   └── bloodmnist/                 # images BloodMNIST, 6 fichiers .npy (partie supervisée)
