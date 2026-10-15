@@ -215,11 +215,3 @@ Attribution : citer le papier MedMNIST v2 ci-dessus. MedMNIST demande aussi de c
 **Emplacement dans le dépôt :** `data/bloodmnist/` (six fichiers `.npy`)
 
 ---
-
-## 6. Points à vérifier avant la soutenance
-
-- [ ] Confirmer la correspondance numéro ↔ nom de classe sur la fiche officielle du
-      dataset (l'ordre alphabétique anglais est la convention, mais doit être vérifié)
-- [ ] Compléter la section 3.1 avec le résultat chiffré du test couleur / niveaux de gris
-- [ ] Compléter la section 3.2 avec la performance effectivement atteinte
-- [ ] Vérifier la distribution des classes sur le jeu de test (cohérence avec le train)
