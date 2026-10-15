@@ -70,7 +70,7 @@ python3 src/supervised_pipeline.py [--model {svm,random-forest,logreg,knn,dummy}
 
 ## Partie non supervisée — tri des témoignages patients
 
-**Dataset** : `data/Student_Dataset.csv`, 1011 témoignages en anglais, texte libre, non labellisé. Un chargement naïf (`pandas.read_csv`) n'en récupère que 397 : le nombre de colonnes varie d'une ligne à l'autre (parfois `id, texte`, parfois `id, couleur, texte`) — corrigé par un parsing manuel ligne à ligne. La colonne couleur, toujours `0x000000` dans les données fournies, est volontairement neutre (vérifié empiriquement) : les vraies catégories ne sont révélées qu'en soutenance pour vérifier la cohérence des clusters.
+**Dataset** : `data/Student_Dataset.csv` (fourni par l'école dans le cadre du projet B-SPE-311), 1011 témoignages en anglais, texte libre, non labellisé. Un chargement naïf (`pandas.read_csv`) n'en récupère que 397 : le nombre de colonnes varie d'une ligne à l'autre (parfois `id, texte`, parfois `id, couleur, texte`) — corrigé par un parsing manuel ligne à ligne. La colonne couleur, toujours `0x000000` dans les données fournies, est volontairement neutre (vérifié empiriquement) : les vraies catégories ne sont révélées qu'en soutenance pour vérifier la cohérence des clusters.
 
 **Pipeline retenu** : nettoyage du texte → TF-IDF (unigrammes + bigrammes, vocabulaire élargi à 2000 termes, `sublinear_tf`) → réduction de dimension par **NMF** (factorisation non négative, 12 composantes, **normalisée** — distance cosinus) → clustering **hiérarchique** (`AgglomerativeClustering`, distance cosinus, **k=12**).
 
